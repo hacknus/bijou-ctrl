@@ -8,8 +8,6 @@ extern crate csv;
 mod gui;
 mod toggle;
 mod io;
-mod windows;
-mod loading_circle;
 mod serial;
 mod bijou;
 

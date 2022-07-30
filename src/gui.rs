@@ -7,7 +7,7 @@ use std::fs;
 use eframe::{egui, Storage};
 use eframe::egui::panel::{Side};
 use eframe::egui::plot::{Line, LineStyle, Plot, Value, Values, VLine};
-use eframe::egui::{Checkbox, FontId, FontFamily, RichText, Stroke};
+use eframe::egui::{Checkbox, FontId, FontFamily, RichText, Stroke, global_dark_light_mode_buttons};
 use crate::toggle::toggle;
 use egui_extras::RetainedImage;
 use itertools_num::linspace;
@@ -15,8 +15,6 @@ use preferences::Preferences;
 use crate::{APP_INFO, vec2};
 use serde::{Deserialize, Serialize};
 use crate::bijou::{BijouDevice, DataContainer};
-use crate::loading_circle::loading_circle;
-use crate::windows::{advanced_settings_window, WindowResponse};
 
 
 const MAX_FPS: f64 = 24.0;
@@ -160,8 +158,8 @@ impl eframe::App for MyApp {
         let mut gui_states: Vec<GuiState> = vec![];
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            let height = ui.available_size().y * 0.45;
-            let spacing = (ui.available_size().y - 2.0 * height) / 3.0 - 10.0;
+            let height = ui.available_size().y * 0.9;
+            let spacing = (ui.available_size().y - height) / 2.0 - 10.0;
             let width = ui.available_size().x * 0.7;
             ui.add_space(spacing);
 
@@ -265,9 +263,9 @@ impl eframe::App for MyApp {
                 ui.horizontal(|ui| {
                     ui.heading("Bijou Control");
                     // TODO: only run this when the system is waiting for a response
-                    ui.add(loading_circle(&mut self.circle_1, &mut self.circle_phi, &mut self.circle_theta, &1.0));
+                    ui.add(egui::Spinner::new());
                     let radius = &ui.spacing().interact_size.y * 0.375;
-                    let center = egui::pos2(ui.next_widget_position().x - &ui.spacing().interact_size.x * 0.5, ui.next_widget_position().y);
+                    let center = egui::pos2(ui.next_widget_position().x + &ui.spacing().interact_size.x * 0.5, ui.next_widget_position().y);
                     ui.painter()
                         .circle(center, radius, egui::Color32::DARK_GREEN, egui::Stroke::new(1.0, egui::Color32::GREEN));
                 });
@@ -356,9 +354,9 @@ impl eframe::App for MyApp {
                         ui.end_row();
                         // ui.label("Dark Mode");
                         // ui.add(toggle(&mut self.dark_mode));
-                        if ui.button("Advaced Settings").clicked() {
-                            self.advanced_settings_window = true;
-                        }
+                        ui.checkbox(&mut self.gui_conf.debug, "Debug Mode");
+                        ui.end_row();
+                        global_dark_light_mode_buttons(ui);
                         ui.end_row();
                         ui.label("");
                         ui.end_row();
@@ -452,21 +450,6 @@ impl eframe::App for MyApp {
 
         self.gui_conf.x = ctx.used_size().x;
         self.gui_conf.y = ctx.used_size().y;
-
-        let mut reconnect = false;
-        if self.advanced_settings_window {
-            let res = advanced_settings_window(ctx, &mut self.device,
-                                               &mut self.dark_mode, &mut self.bijou_conf, &mut self.gui_conf);
-            match res {
-                WindowResponse::IDLE => {}
-                WindowResponse::SAVE => {
-                    self.advanced_settings_window = false;
-                }
-                WindowResponse::CANCEL => {
-                    self.advanced_settings_window = false;
-                }
-            }
-        }
 
         if !gui_states.is_empty() {
             self.config_tx.send(gui_states);
