@@ -48,6 +48,8 @@ impl Default for DataContainer {
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct BijouDevice {
     pub device: String,
+    pub coffee_set: f32,
+    pub steam_set : f32,
     pub pump_state: bool,
     pub pump: u16,
     pub heater_1_state: bool,
@@ -60,6 +62,8 @@ impl Default for BijouDevice {
     fn default() -> BijouDevice {
         return BijouDevice {
             device: "".to_string(),
+            coffee_set: 90.0,
+            steam_set: 120.0,
             pump_state: false,
             pump: 0,
             heater_1_state: false,
