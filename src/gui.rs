@@ -15,6 +15,7 @@ use preferences::Preferences;
 use crate::{APP_INFO, vec2};
 use serde::{Deserialize, Serialize};
 use crate::bijou::{BijouDevice, DataContainer};
+use crate::gauge::gauge;
 
 
 const MAX_FPS: f64 = 24.0;
@@ -160,7 +161,7 @@ impl eframe::App for MyApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             let height = ui.available_size().y * 0.9;
             let spacing = (ui.available_size().y - height) / 2.0 - 10.0;
-            let width = ui.available_size().x * 0.7;
+            let width = ui.available_size().x * 0.8;
             ui.add_space(spacing);
 
             ui.horizontal(|ui| {
@@ -269,10 +270,51 @@ impl eframe::App for MyApp {
                     ui.painter()
                         .circle(center, radius, egui::Color32::DARK_GREEN, egui::Stroke::new(1.0, egui::Color32::GREEN));
                 });
+
+                let mut devices: Vec<String> = Vec::new();
+                match serialport::available_ports() {
+                    Ok(ports) => {
+                        // maybe remove bluetooth port here...
+                        for port in ports {
+                            devices.push(port.port_name);
+                        }
+                    }
+                    Err(e) => {
+                        devices.push("no devices found".to_string());
+                    }
+                }
+
+                egui::ComboBox::from_id_source("Device")
+                    .selected_text(&self.device)
+                    .show_ui(ui, |ui| {
+                        for dev in devices {
+                            ui.selectable_value(&mut self.device, dev.clone(), dev);
+                        }
+                    },
+                    );
+                // gui_states.push(GuiState::Channel(self.tera_flash_conf.channel.clone()));
+
                 ui.separator();
+                ui.horizontal(|ui| {
+                    ui.add(gauge(&self.coffee_temperature, 0.0, 300.0, 5.0, "temperature"));
+                    ui.add(gauge(&self.steam_temperature, 0.0, 300.0, 5.0, "temperature"));
+                });
+                ui.horizontal(|ui| {
+                    ui.add(gauge(&self.steam_temperature, 0.0, 300.0, 5.0, "temperature"));
+                    ui.add(gauge(&self.coffee_temperature, 0.0, 300.0, 5.0, "temperature"));
+                });
+                self.coffee_temperature += 1.0;
+                self.steam_temperature += 3.0;
+                if self.coffee_temperature > 300.0 {
+                    self.coffee_temperature = 0.0;
+                }
+                if self.steam_temperature > 300.0 {
+                    self.steam_temperature = 0.0;
+                }
+
                 egui::Grid::new("upper")
                     .num_columns(2)
-                    .spacing([40.0, 4.0])
+                    .spacing([80.0, 4.0])
                     .striped(true)
                     .show(ui, |ui| {
                         ui.label("Power Set ");
@@ -282,28 +324,6 @@ impl eframe::App for MyApp {
                         ui.label("Heater 2 Set: ");
                         ui.end_row();
 
-                        let mut devices: Vec<String> = Vec::new();
-                        match fs::read_dir("/dev/tty.usb*") {
-                            Ok(paths) => {
-                                for path in paths {
-                                    devices.push(path.unwrap().path().display().to_string());
-                                }
-                            }
-                            Err(e) => {
-                                devices.push("no devices found".to_string());
-                            }
-                        }
-
-                        egui::ComboBox::from_id_source("Device")
-                            .selected_text(&self.device)
-                            .show_ui(ui, |ui| {
-                                for dev in devices {
-                                    ui.selectable_value(&mut self.device, dev.clone(), dev);
-                                }
-                            },
-                            );
-                        // gui_states.push(GuiState::Channel(self.tera_flash_conf.channel.clone()));
-                        ui.end_row();
                         ui.label("Pump State");
                         if ui.add(toggle(&mut self.state_pump)).changed() {
                             // gui_states.push(GuiState::Laser(self.state_laser));
@@ -352,8 +372,6 @@ impl eframe::App for MyApp {
                         ui.end_row();
                         ui.label("");
                         ui.end_row();
-                        // ui.label("Dark Mode");
-                        // ui.add(toggle(&mut self.dark_mode));
                         ui.checkbox(&mut self.gui_conf.debug, "Debug Mode");
                         ui.end_row();
                         global_dark_light_mode_buttons(ui);
