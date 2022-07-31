@@ -10,6 +10,7 @@ mod toggle;
 mod io;
 mod serial;
 mod bijou;
+mod gauge;
 
 use std::error::Error;
 use std::thread;
